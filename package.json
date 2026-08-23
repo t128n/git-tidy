@@ -8,6 +8,6 @@
     "version-packages": "changeset version && cargo set-version $(bun -e \"console.log(require('./package.json').version)\")"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.27.0"
+    "@changesets/cli": "^3.0.0"
   }
 }
