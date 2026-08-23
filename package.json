@@ -5,7 +5,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "version-packages": "changeset version && cargo set-version $(bun -e \"console.log(require('./package.json').version)\")"
+    "version-packages": "changeset version && bun run ./scripts/sync-version.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.0"
