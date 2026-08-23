@@ -1,6 +1,6 @@
 {
   "name": "@t128n/git-tidy",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Git workspace organizer and cloning utility",
   "license": "MIT",
   "private": true,
