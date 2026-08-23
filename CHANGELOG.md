@@ -1,5 +1,11 @@
 # @t128n/git-tidy
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix organize command targeting hostname and structured repo directories for relocation to local_path
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use regex::Regex;
 use std::path::{Path, PathBuf};
 
 use crate::config::Config;
@@ -31,6 +32,20 @@ pub fn organize(config: &Config, options: &OrganizeOptions) -> Result<()> {
             continue;
         }
 
+        let display_name = path.file_name().unwrap_or_default().to_string_lossy();
+
+        // Skip hidden directories (.git, .config, etc.)
+        if display_name.starts_with('.') {
+            continue;
+        }
+
+        // Skip the local_path directory itself
+        if let Some(ref local_path) = config.local_path
+            && display_name == *local_path
+        {
+            continue;
+        }
+
         // Check if this is a git repository
         let git_dir = path.join(".git");
         if !git_dir.exists() {
@@ -55,7 +70,6 @@ pub fn organize(config: &Config, options: &OrganizeOptions) -> Result<()> {
             continue;
         }
 
-        let display_name = path.file_name().unwrap_or_default().to_string_lossy();
         let target_display = normalize_git_url(&url);
 
         if options.dry_run {
@@ -85,46 +99,110 @@ pub fn organize(config: &Config, options: &OrganizeOptions) -> Result<()> {
         && !local_path.is_empty()
     {
         let entries = std::fs::read_dir(root)
-                .with_context(|| format!("Failed to read directory: {}", root.display()))?;
+            .with_context(|| format!("Failed to read directory: {}", root.display()))?;
 
-            for entry in entries {
-                let entry = entry?;
-                let path = entry.path();
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
 
-                if !path.is_dir() || handled.contains(&path) {
-                    continue;
-                }
-
-                let display_name = path.file_name().unwrap_or_default().to_string_lossy();
-                let target = root.join(local_path).join(&*display_name);
-
-                if paths_equal(&path, &target) || target.exists() {
-                    continue;
-                }
-
-                if options.dry_run {
-                    println!("[dry-run] Would move: {display_name} -> {local_path}/{display_name}");
-                } else {
-                    if let Some(parent) = target.parent() {
-                        std::fs::create_dir_all(parent).with_context(|| {
-                            format!("Failed to create directory: {}", parent.display())
-                        })?;
-                    }
-
-                    std::fs::rename(&path, &target).with_context(|| {
-                        format!(
-                            "Failed to move {} -> {}",
-                            path.display(),
-                            target.display()
-                        )
-                    })?;
-
-                    println!("Moved: {display_name} -> {local_path}/{display_name}");
-                }
+            if !path.is_dir() || handled.contains(&path) {
+                continue;
             }
+
+            let display_name = path.file_name().unwrap_or_default().to_string_lossy();
+
+            // 1. Skip hidden directories (.git, .config, etc.)
+            if display_name.starts_with('.') {
+                continue;
+            }
+
+            // 2. Skip the local_path directory itself
+            if display_name == *local_path {
+                continue;
+            }
+
+            // 3. Skip hostname / domain directories (e.g. "github.com", "mercedes-benz.ghe.com")
+            if is_hostname_like(&display_name) {
+                continue;
+            }
+
+            // 4. Skip directories matching any workspace pattern
+            if config.workspaces.iter().any(|ws| {
+                Regex::new(&ws.pattern)
+                    .map(|r| r.is_match(&display_name))
+                    .unwrap_or(false)
+            }) {
+                continue;
+            }
+
+            // 5. Skip directories that contain nested git repositories (structured domain/org folders)
+            if contains_nested_git_repos(&path) {
+                continue;
+            }
+
+            let target = root.join(local_path).join(&*display_name);
+
+            if paths_equal(&path, &target) || target.exists() {
+                continue;
+            }
+
+            if options.dry_run {
+                println!("[dry-run] Would move: {display_name} -> {local_path}/{display_name}");
+            } else {
+                if let Some(parent) = target.parent() {
+                    std::fs::create_dir_all(parent).with_context(|| {
+                        format!("Failed to create directory: {}", parent.display())
+                    })?;
+                }
+
+                std::fs::rename(&path, &target).with_context(|| {
+                    format!(
+                        "Failed to move {} -> {}",
+                        path.display(),
+                        target.display()
+                    )
+                })?;
+
+                println!("Moved: {display_name} -> {local_path}/{display_name}");
+            }
+        }
     }
 
     Ok(())
+}
+
+/// Check if a directory name looks like a hostname / domain (e.g. "github.com", "mercedes-benz.ghe.com").
+fn is_hostname_like(name: &str) -> bool {
+    if !name.contains('.') || name.starts_with('.') || name.ends_with('.') {
+        return false;
+    }
+
+    name.split('.').all(|part| !part.is_empty() && part.chars().all(|c| c.is_alphanumeric() || c == '-'))
+}
+
+/// Check if a directory contains any nested git repositories (up to 3 levels deep).
+fn contains_nested_git_repos(dir: &Path) -> bool {
+    fn check_dir(dir: &Path, depth: usize) -> bool {
+        if depth > 3 {
+            return false;
+        }
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return false;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                if path.join(".git").exists() {
+                    return true;
+                }
+                if check_dir(&path, depth + 1) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+    check_dir(dir, 1)
 }
 
 /// Compare two paths after canonicalizing, handling missing paths gracefully.
@@ -138,3 +216,20 @@ fn paths_equal(a: &Path, b: &Path) -> bool {
 
     a_normalized == b_normalized
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_hostname_like() {
+        assert!(is_hostname_like("github.com"));
+        assert!(is_hostname_like("mercedes-benz.ghe.com"));
+        assert!(is_hostname_like("gitlab.my-org.co.uk"));
+        assert!(!is_hostname_like("my-project"));
+        assert!(!is_hostname_like(".git"));
+        assert!(!is_hostname_like(".config"));
+        assert!(!is_hostname_like("trailing.dot."));
+    }
+}
+
