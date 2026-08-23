@@ -1,0 +1,30 @@
+name: PR Changesets Status
+
+on:
+  pull_request:
+
+jobs:
+  changeset-status:
+    name: Changesets Status
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Get changeset status
+        id: status
+        uses: changesets/action/pr-status@v2
+
+      - name: Comment on PR
+        uses: changesets/action/pr-comment@v2
+        with:
+          body: ${{ steps.status.outputs.comment-body }}
+          update-id: changeset-status

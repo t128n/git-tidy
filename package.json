@@ -1,0 +1,13 @@
+{
+  "name": "@t128n/git-tidy",
+  "version": "2.0.0",
+  "description": "Git workspace organizer and cloning utility",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "version-packages": "changeset version && cargo set-version $(bun -e \"console.log(require('./package.json').version)\")"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0"
+  }
+}
