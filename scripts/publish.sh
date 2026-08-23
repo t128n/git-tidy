@@ -43,8 +43,46 @@ for entry in "${TARGETS[@]}"; do
   fi
 done
 
+WIN_ARCHIVE="dist/${PACKAGE_NAME}-${VERSION}-windows-x64.zip"
+if [[ -f "${WIN_ARCHIVE}" ]]; then
+  DESCRIPTION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].description')
+  if command -v sha256sum >/dev/null 2>&1; then
+    WIN_SHA=$(sha256sum "${WIN_ARCHIVE}" | awk '{print toupper($1)}')
+  elif command -v shasum >/dev/null 2>&1; then
+    WIN_SHA=$(shasum -a 256 "${WIN_ARCHIVE}" | awk '{print toupper($1)}')
+  else
+    WIN_SHA=""
+  fi
+
+  if [[ -n "${WIN_SHA}" ]]; then
+    cat <<EOF > "dist/winget.yaml"
+# yaml-language-server: \$schema=https://aka.ms/winget-manifest.singleton.1.9.0.schema.json
+PackageIdentifier: t128n.${PACKAGE_NAME}
+PackageVersion: ${VERSION}
+PackageName: ${PACKAGE_NAME}
+Publisher: t128n
+License: MIT
+ShortDescription: ${DESCRIPTION}
+PackageLocale: en-US
+ManifestType: singleton
+ManifestVersion: 1.9.0
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles:
+  - RelativeFilePath: ${PACKAGE_NAME}.exe
+    PortableCommandAlias: ${PACKAGE_NAME}
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/t128n/${PACKAGE_NAME}/releases/download/v${VERSION}/${PACKAGE_NAME}-${VERSION}-windows-x64.zip
+    InstallerSha256: ${WIN_SHA}
+EOF
+    echo "Generated dist/winget.yaml"
+  fi
+fi
+
 echo "Build complete. Artifacts ready in dist/:"
 ls -lh dist/
 
 bunx changeset publish
+
 

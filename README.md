@@ -10,6 +10,12 @@ Git workspace organizer and cloning utility.
 mise use -g github:t128n/git-tidy
 ```
 
+### Windows Package Manager (WinGet)
+
+```powershell
+irm "https://github.com/t128n/git-tidy/releases/latest/download/winget.yaml" | Out-File "$env:TEMP\git-tidy.yaml"; winget install -m "$env:TEMP\git-tidy.yaml" --accept-source-agreements --accept-package-agreements; rm "$env:TEMP\git-tidy.yaml"
+```
+
 ### Manual Binary Releases
 
 Download pre-built binaries from [GitHub Releases](https://github.com/t128n/git-tidy/releases).
@@ -22,7 +28,16 @@ Available targets:
 
 ## Configuration
 
+You can manage your configuration using the `config` command:
+
+```bash
+git tidy config        # Print config file path and status
+git tidy config init   # Initialize config with full template settings (use --force to overwrite)
+git tidy config reset  # Reset config to factory defaults
+```
+
 git-tidy reads config from `~/.config/git-tidy/config.json`:
+
 
 ```json
 {

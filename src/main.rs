@@ -47,8 +47,24 @@ enum Commands {
         dry_run: bool,
     },
 
-    /// Print usage information
-    Help,
+    /// Manage configuration
+    Config {
+        #[command(subcommand)]
+        action: Option<ConfigAction>,
+    },
+}
+
+#[derive(Subcommand)]
+enum ConfigAction {
+    /// Initialize config file with all available settings
+    Init {
+        /// Overwrite existing config file if present
+        #[arg(long, short)]
+        force: bool,
+    },
+
+    /// Reset config file to factory defaults
+    Reset,
 }
 
 #[derive(clap::ValueEnum, Clone)]
@@ -86,12 +102,14 @@ fn main() -> Result<()> {
         Some(Commands::Organize { path, dry_run }) => {
             cmd_organize(&config, path, dry_run)
         }
-        Some(Commands::Help) | None => {
+        Some(Commands::Config { action }) => cmd_config(action),
+        None => {
             print_usage();
             Ok(())
         }
     }
 }
+
 
 fn cmd_clone(config: &Config, url: &str, root: Option<PathBuf>) -> Result<()> {
     let root = root.unwrap_or_else(|| config.resolve_workspace(url));
@@ -115,15 +133,51 @@ fn cmd_organize(config: &Config, path: Option<PathBuf>, dry_run: bool) -> Result
     organize::organize(config, &options)
 }
 
+fn cmd_config(action: Option<ConfigAction>) -> Result<()> {
+    match action {
+        Some(ConfigAction::Init { force }) => {
+            let path = Config::init(force)?;
+            println!("Initialized config at {}", path.display());
+            Ok(())
+        }
+        Some(ConfigAction::Reset) => {
+            let path = Config::reset()?;
+            println!("Reset config to factory defaults at {}", path.display());
+            Ok(())
+        }
+        None => {
+            if let Some(path) = Config::config_path() {
+                let status = if path.exists() { "exists" } else { "not found" };
+                println!("Config file: {} ({status})", path.display());
+            } else {
+                println!("Config file: unknown (could not determine home directory)");
+            }
+            println!();
+            println!("Available subcommands:");
+            println!("    init     Initialize config file with all available settings (use --force to overwrite)");
+            println!("    reset    Reset config file to factory defaults");
+            println!();
+            println!("Usage: git-tidy config <COMMAND>");
+            Ok(())
+        }
+    }
+}
+
 fn print_usage() {
     println!("git-tidy - Git workspace organizer and cloning utility");
     println!();
     println!("USAGE:");
     println!("    git-tidy clone <url> [root-path]     Clone repository into host/org/repo structure");
     println!("    git-tidy organize [path] [--dry-run]  Organize existing flat git repos");
+    println!("    git-tidy config [init|reset]         Manage configuration");
     println!("    git-tidy help                        Print this help message");
     println!();
     println!("OPTIONS:");
     println!("    --dry-run    Preview moves without making changes");
     println!("    --completions <SHELL>  Generate shell completions (bash, zsh, fish, powershell, elvish)");
+    if let Some(path) = Config::config_path() {
+        println!();
+        println!("CONFIG: {}", path.display());
+    }
 }
+
