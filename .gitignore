@@ -23,6 +23,5 @@ rustc-ice-*.txt
 #  option (not recommended) you can uncomment the line below to ignore the entire idea folder.
 #.idea/
 
-# Node.js / Changesets
+# Node.js
 node_modules/
-.changeset/
