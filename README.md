@@ -25,6 +25,25 @@ Available targets:
 - `aarch64-unknown-linux-gnu` (Linux ARM64)
 - `x86_64-pc-windows-gnu` (Windows x64)
 
+## Updating
+
+### Using mise
+
+```bash
+mise upgrade github:t128n/git-tidy
+# or upgrade all global tools:
+mise upgrade
+```
+
+### Using WinGet
+
+Re-run the installation command to fetch and install the latest release:
+
+```powershell
+irm "https://github.com/t128n/git-tidy/releases/latest/download/winget.yaml" | Out-File "$env:TEMP\git-tidy.yaml"; winget install -m "$env:TEMP\git-tidy.yaml" --accept-source-agreements --accept-package-agreements; rm "$env:TEMP\git-tidy.yaml"
+```
+
+
 
 ## Configuration
 
