@@ -47,10 +47,10 @@ git-tidy reads config from `~/.config/git-tidy/config.json`:
 Clone into a structured path (`host/org/repo`), routed by workspace:
 
 ```bash
-git-tidy clone https://github.com/owner/repo.git
+git tidy clone https://github.com/owner/repo.git
 # Clones to: P:\Dev\github.com\owner\repo
 
-git-tidy clone https://ghe.company.com/org/repo.git
+git tidy clone https://ghe.company.com/org/repo.git
 # Clones to: P:\Dev-work\ghe.company.com\org\repo
 ```
 
@@ -59,14 +59,14 @@ git-tidy clone https://ghe.company.com/org/repo.git
 Move flat repositories into structured paths, with workspace routing:
 
 ```bash
-git-tidy organize
+git tidy organize
 # Organizes repos in default_path
 
-git-tidy organize C:\Repos
+git tidy organize C:\Repos
 # Organizes repos in C:\Repos
 
 # Preview changes without moving anything:
-git-tidy organize --dry-run
+git tidy organize --dry-run
 
 # Unrecognized folders are moved to git.local/
 # Set local_path to "" to skip this behavior
@@ -78,16 +78,16 @@ Generate shell completions for your shell:
 
 ```bash
 # Bash
-git-tidy --completions bash > /etc/bash_completion.d/git-tidy
+git tidy --completions bash > /etc/bash_completion.d/git-tidy
 
 # Zsh
-git-tidy --completions zsh > ~/.zfunc/_git-tidy
+git tidy --completions zsh > ~/.zfunc/_git-tidy
 
 # Fish
-git-tidy --completions fish > ~/.config/fish/completions/git-tidy.fish
+git tidy --completions fish > ~/.config/fish/completions/git-tidy.fish
 
 # PowerShell
-git-tidy --completions powershell > git-tidy.ps1
+git tidy --completions powershell > git-tidy.ps1
 ```
 
 ## License
