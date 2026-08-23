@@ -4,14 +4,21 @@ Git workspace organizer and cloning utility.
 
 ## Installation
 
-### Binary Releases
+### Using [mise](https://mise.jdx.dev) (Recommended)
+
+```bash
+mise use -g github:t128n/git-tidy
+```
+
+### Manual Binary Releases
 
 Download pre-built binaries from [GitHub Releases](https://github.com/t128n/git-tidy/releases).
 
 Available targets:
 - `x86_64-unknown-linux-gnu` (Linux x64)
 - `aarch64-unknown-linux-gnu` (Linux ARM64)
-- `x86_64-pc-windows-msvc` (Windows x64)
+- `x86_64-pc-windows-gnu` (Windows x64)
+
 
 ## Configuration
 
