@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -63,3 +64,13 @@ jobs:
               gh release upload "$TAG_NAME" "$file" --clobber
             fi
           done
+
+      - name: Dispatch to winget-community-pkgs
+        if: steps.changesets.outputs.published == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+          repository: t128n/winget-community-pkgs
+          event-type: release
+          client-payload: '{"package": "git-tidy"}'
+
