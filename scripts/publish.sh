@@ -45,3 +45,6 @@ done
 
 echo "Build complete. Artifacts ready in dist/:"
 ls -lh dist/
+
+bunx changeset publish
+
